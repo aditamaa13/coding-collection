@@ -1,0 +1,80 @@
+function onOpen() {
+  const ui = SpreadsheetApp.getUi();
+  const menu = ui.createMenu('Auto Generate Document');
+  menu.addItem('Surat Otomatis', 'SuratOtomatis')
+  menu.addItem('Advis Debet','AdvisDebet' )
+  menu.addToUi();
+
+}
+
+function SuratOtomatis() {
+  //id dokumen untuk template surat
+  const googleDocTemplate = DriveApp.getFileById('1OBpgLj6ydNohJC4luNb_eRNNZuOdiDQ_oEM1lD1YiFI');
+  
+  //id folder tempat penyimpanan surat
+  const destinationFolder = DriveApp.getFolderById('1Bt4n8gYZZJK9kuT9555tVOmimFadTwTZ')
+  //Sheet di simpan sebagai sebuah variabel baru (PENTING UNTUK INGAT NAMA SHEET)
+  const sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName('Form Responses 1')
+  
+  //Untuk pengecekan Array 2 Dimensi (Sb X dan Sb Y)
+  const rows = sheet.getDataRange().getValues();
+  
+  //Proses pengecekan setiap KOLOM
+  rows.forEach(function(row, index){
+    //Pengecekan setiap baris, untuk baris ke 1 akan di skip (karena heading)
+    if (index === 0) return;
+    //pengecekan kolom, jika sudah ada isinya (sudah pernah tergenerate), akan dilewati langsung ke baris selanjutnya
+    if (row[6]) return;
+    //Format Nama: Nama Mahasiswa, Surat
+    const copy = googleDocTemplate.makeCopy(`${row[1]}, Surat` , destinationFolder)
+    //Setelah sudah punya dokumennya, akan dibuka oleh DocumentApp
+    const doc = DocumentApp.openById(copy.getId())
+    //Semua konten yang ingin di edit berada di Body surat
+    const body = doc.getBody();
+    
+    //Melakukan penggantia dari Template (Kiri), menjadi yang dari Spreadsheet (Kanan
+    body.replaceText('{{Nama Lengkap}}', row[1]);
+    body.replaceText('{{NPM}}', row[2]);
+    body.replaceText('{{No. HP}}', row[4]);
+    body.replaceText('{{Alamat pengiriman KTM}}', row[5]);
+    
+    //Menyimpan file secara permanent
+    doc.saveAndClose();
+    //Memunculkan link dari dokumen yang telah terbentuk, untuk mempermudah akses
+    const url = doc.getUrl();
+    //setelah sudah untuk 1 baris, maka akan dilakukan looping untuk memastikan seluruh baris terisi
+    sheet.getRange(index + 1, 7).setValue(url)
+    
+  })
+  
+}
+
+function AdvisDebet() {
+  const googleDocTemplate = DriveApp.getFileById('1T0kM95NTfTsi2ihFDB93w3pzg-J0-q5T7vKHoGsoVG0');
+  const destinationFolder = DriveApp.getFolderById('1ChEWDEjZ4NZShWzLpHWHhz8h2xh3QaPa')
+  const sheet = SpreadsheetApp
+    .getActiveSpreadsheet()
+    .getSheetByName('Form Responses 1')
+  
+  const rows = sheet.getDataRange().getValues();
+  
+  rows.forEach(function(row, index){
+    if (index === 0) return;
+    if (row[7]) return;
+    const copy = googleDocTemplate.makeCopy(`${row[1]}, Advis Debet` , destinationFolder)
+    const doc = DocumentApp.openById(copy.getId())
+    const body = doc.getBody();
+
+    body.replaceText('{{Nama}}', row[1]);
+    body.replaceText('{{NoRek}}', row[3]);
+    
+
+    doc.saveAndClose();
+    const url = doc.getUrl();
+    sheet.getRange(index + 1, 8).setValue(url)
+
+  })
+
+}
